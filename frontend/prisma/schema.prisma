@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  passwordHash String
+  ltcAddress   String?
+  balance      Float         @default(0)
+  miningPower  Float         @default(0)
+  isAdmin      Boolean       @default(false)
+  isBlocked    Boolean       @default(false)
+  createdAt    DateTime      @default(now())
+  deposits     Deposit[]
+  withdrawals  Withdrawal[]
+  purchases    Purchase[]
+  transactions Transaction[]
+}
+
+model Deposit {
+  id        Int           @id @default(autoincrement())
+  user      User          @relation(fields: [userId], references: [id])
+  userId    Int
+  amount    Float
+  txid      String
+  status    DepositStatus @default(pending)
+  createdAt DateTime       @default(now())
+}
+
+model Withdrawal {
+  id         Int               @id @default(autoincrement())
+  user       User              @relation(fields: [userId], references: [id])
+  userId     Int
+  amount     Float
+  ltcAddress String
+  txid       String?
+  status     WithdrawalStatus  @default(pending)
+  createdAt  DateTime          @default(now())
+}
+
+model Package {
+  id                 Int        @id @default(autoincrement())
+  name               String     @unique
+  price              Float
+  miningPower        Float
+  dailyProfitPercent Float
+  isActive           Boolean    @default(true)
+  purchases          Purchase[]
+}
+
+model Purchase {
+  id        Int      @id @default(autoincrement())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  package   Package  @relation(fields: [packageId], references: [id])
+  packageId Int
+  createdAt DateTime @default(now())
+}
+
+model Transaction {
+  id          Int               @id @default(autoincrement())
+  user        User              @relation(fields: [userId], references: [id])
+  userId      Int
+  type        TransactionType
+  amount      Float
+  description String
+  createdAt   DateTime          @default(now())
+}
+
+enum DepositStatus {
+  pending
+  confirmed
+  rejected
+}
+
+enum WithdrawalStatus {
+  pending
+  completed
+  rejected
+}
+
+enum TransactionType {
+  deposit
+  withdrawal
+  earning
+  adjustment
+  purchase
+}
